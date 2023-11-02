@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "lcd_screen_i2c.h": "c"
+        "lcd_screen_i2c.h": "c",
+        "functional": "c"
     }
 }

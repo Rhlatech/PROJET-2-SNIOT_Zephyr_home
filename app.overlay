@@ -5,6 +5,10 @@
             gpios = <&gpio0 13 GPIO_ACTIVE_HIGH>;
             label = "LED 1";
         };
+        buzzer: buzzer {
+            gpios = <&gpio0 25 GPIO_ACTIVE_HIGH>;
+            label = "Allarme de securite";
+        };
     };
 
     dht11: dht11 {
@@ -14,14 +18,37 @@
         label = "XHT11";
     };
 
+    zephyr,user {
+		io-channels =
+			<&adc0 6>;
+	};
+
+    buttons {
+        compatible = "gpio-keys";
+            button_16: button_16 {
+                gpios = <&gpio0 16 GPIO_ACTIVE_HIGH>;
+                label = "User button 1";
+            };
+            button_27: button_27 {
+                gpios = <&gpio0 27 GPIO_ACTIVE_HIGH>;
+                label = "User button 2";
+            };
+        };
+
     
     aliases {
         led-yellow = &ledyellow;
         display = &display;
         capteur = &dht11;
+        button1 = &button_16;
+        button2 = &button_27;
+        buzzer = &buzzer;
+        
     };
 
 };
+
+
 
 &i2c0 {
     display: I2c_display@27 {
@@ -29,4 +56,18 @@
         reg = <0x27>;
         label = "Afficheur";
     };
+};
+
+&adc0 {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	channel@6 {
+		reg = <6>;
+		zephyr,gain = "ADC_GAIN_1_4";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+	};
 };

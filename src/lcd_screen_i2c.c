@@ -3,7 +3,7 @@
 #include <zephyr/kernel.h>
 
 static void lcd_toggle_enable(const struct i2c_dt_spec *dev_lcd_screen, uint8_t bits);
-static void lcd_byte(const struct i2c_dt_spec *dev_lcd_screen, uint8_t bits, uint8_t mode);
+//static void lcd_byte(const struct i2c_dt_spec *dev_lcd_screen, uint8_t bits, uint8_t mode);
 
 void init_lcd(const struct i2c_dt_spec *dev_lcd_screen)
 {
@@ -17,7 +17,7 @@ void init_lcd(const struct i2c_dt_spec *dev_lcd_screen)
     write_lcd(dev_lcd_screen, ZEPHYR_MSG, LCD_LINE_2);
 }
 
-static void lcd_byte(const struct i2c_dt_spec *dev_lcd_screen, uint8_t bits, uint8_t mode)
+void lcd_byte(const struct i2c_dt_spec *dev_lcd_screen, uint8_t bits, uint8_t mode)
 {
     int ret = 0;
     uint8_t bits_high = mode | (bits & 0xf0) | LCD_BACKLIGHT;
