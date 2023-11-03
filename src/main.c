@@ -19,6 +19,7 @@
 #define SW0_NODE	DT_ALIAS(button1)
 #define SW1_NODE	DT_ALIAS(button2)
 #define BUZZER_NODE	DT_ALIAS(buzzer)
+#define IR_SENSOR_NODE	DT_ALIAS(irsensor)
 
 // La LED
 const struct gpio_dt_spec led_yellow_gpio = GPIO_DT_SPEC_GET_OR(LED_YELLOW_NODE, gpios, {0});
@@ -36,23 +37,24 @@ static const struct gpio_dt_spec button2 = GPIO_DT_SPEC_GET_OR(SW1_NODE, gpios, 
 static struct gpio_callback button2_cb_data;
 // Buzzer
 static const struct gpio_dt_spec buzzer = GPIO_DT_SPEC_GET_OR(BUZZER_NODE, gpios, {0});
+// SENSEUR IR
+const struct gpio_dt_spec irsensor = GPIO_DT_SPEC_GET_OR(IR_SENSOR_NODE, gpios, {0});
 
 int allumage = 0;
 int disp_init = 0;
+int alarme = 0;
 
 
-void button_pressed(const struct device *dev, struct gpio_callback *cb,
-		    uint32_t pins)
+void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
-	printk("Button pressed 1 at %" PRIu32 "\n", k_cycle_get_32());
+	printk("Button pressed 1 ");
 	allumage = 1;
 
 }
 
-void button_pressed2(const struct device *dev, struct gpio_callback *cb,
-		    uint32_t pins)
+void button_pressed2(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
-	printk("Button pressed 2 at %" PRIu32 "\n", k_cycle_get_32());
+	printk("Button pressed 2");
 	allumage = -1;
 }
 
@@ -88,15 +90,15 @@ int main(void)
 	gpio_init_callback(&button2_cb_data, button_pressed2, BIT(button2.pin));
 	gpio_add_callback(button2.port, &button2_cb_data);
 	while (1) {
-
 		if(allumage == 1)
 		{
 			// Allumage LED
-			gpio_pin_set_dt(&led_yellow_gpio, GPIO_OUTPUT_HIGH);
-			if(disp_init == 0){
-			printk(" Allumage ! ");
-			write_lcd(&display_i2c," Allumage ! ",LCD_LINE_1);
-			disp_init = 1;
+			gpio_pin_set_dt(&led_yellow_gpio, 1);
+			if(disp_init == 0)
+			{
+				printk(" Allumage ! ");
+				write_lcd(&display_i2c," Allumage ! ",LCD_LINE_1);
+				disp_init = 1;
 			}
 			k_sleep(K_MSEC(1000));
 			//Gestion du capteur humidity and temperature
@@ -120,7 +122,7 @@ int main(void)
 			double volts = val_mv / 1000.0;
 			char caract3[16];
 			printf("Tension Steam sensor : %.3f\n", volts);
-			sprintf(caract3," %.3f", volts);
+			sprintf(caract3," %1.02f", volts);
 			write_lcd(&display_i2c," Steam sensor :",LCD_LINE_1);
 			write_lcd(&display_i2c,caract3,LCD_LINE_2);
 			k_sleep(K_MSEC(1000));
@@ -128,26 +130,51 @@ int main(void)
 			lcd_byte(&display_i2c, 0x01, LCD_CMD);
 		} else if(allumage == -1)
 		{
+			alarme = 0;
 			//Clear command of the screen
 			lcd_byte(&display_i2c, 0x01, LCD_CMD);
 			// Allumage LED
-			gpio_pin_set_dt(&led_yellow_gpio, GPIO_OUTPUT_LOW);
+			gpio_pin_set_dt(&led_yellow_gpio, 0);
 			printk(" Extinction ! \n");
 			write_lcd(&display_i2c," Extinction ! ",LCD_LINE_1);
 			k_sleep(K_MSEC(1000));
 			//Clear command of the screen
 			lcd_byte(&display_i2c, 0x01, LCD_CMD);
 			disp_init = 0;
-			//return 0;
-			gpio_pin_set_dt(&buzzer, GPIO_OUTPUT_HIGH);
-			k_sleep(K_MSEC(1000));
-			gpio_pin_set_dt(&buzzer, GPIO_OUTPUT_LOW);
+			return 0;
 		}
-
 		k_sleep(K_MSEC(1000));
 	}
-	printf(" Sortie PRG ");
+	printf(" Sortie PRG \n");
 	//Clear command of the screen
 	lcd_byte(&display_i2c, 0x01, LCD_CMD);
 	return 0;
 }
+
+void compute_thread(){
+	int err;
+	//IR sensor
+	//err = gpio_pin_configure_dt(&irsensor, GPIO_INPUT);
+	//printk("Value of error is %d\n", err);
+	while(1){
+		//alarme = gpio_pin_get_dt(&irsensor);
+		//printk("Value of alarme is %d\n", alarme);
+		if(alarme == 1){
+			allumage = 0;
+			//Clear command of the screen
+			lcd_byte(&display_i2c, 0x01, LCD_CMD);
+			//Affichage de detection
+			write_lcd(&display_i2c," PRESENCE  ",LCD_LINE_1);
+			write_lcd(&display_i2c," DETECTE ",LCD_LINE_2);
+			//Lumière et buzzer
+			gpio_pin_set_dt(&buzzer, 1);
+			gpio_pin_set_dt(&led_yellow_gpio, 1);
+			k_sleep(K_MSEC(1));
+			gpio_pin_set_dt(&buzzer, 0);
+			gpio_pin_set_dt(&led_yellow_gpio, 0);
+			k_sleep(K_MSEC(1));
+		}
+	}
+}
+
+K_THREAD_DEFINE(compute_thread_id, 521, compute_thread, NULL, NULL, NULL, 9, 0, 0);

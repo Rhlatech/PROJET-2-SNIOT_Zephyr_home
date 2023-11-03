@@ -9,6 +9,11 @@
             gpios = <&gpio0 25 GPIO_ACTIVE_HIGH>;
             label = "Allarme de securite";
         };
+
+        irsensor: irsensor {
+            gpios = <&gpio0 14 GPIO_ACTIVE_HIGH>;
+            label = " Senseur ";
+        };
     };
 
     dht11: dht11 {
@@ -43,6 +48,7 @@
         button1 = &button_16;
         button2 = &button_27;
         buzzer = &buzzer;
+        irsensor = &irsensor;
         
     };
 
