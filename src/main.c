@@ -89,7 +89,8 @@ int main(void)
 	err = gpio_pin_interrupt_configure_dt(&button2, GPIO_INT_EDGE_TO_ACTIVE);
 	gpio_init_callback(&button2_cb_data, button_pressed2, BIT(button2.pin));
 	gpio_add_callback(button2.port, &button2_cb_data);
-	while (1) {
+	while (1) 
+	{
 		if(allumage == 1)
 		{
 			alarme = 0;
