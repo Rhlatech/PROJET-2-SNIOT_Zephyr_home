@@ -47,14 +47,14 @@ int alarme = 0;
 
 void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
-	printk("Button pressed 1 ");
+	printk("Button Allumage pressed \n");
 	allumage = 1;
 
 }
 
 void button_pressed2(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
-	printk("Button pressed 2");
+	printk("Button Extinction pressed \n");
 	allumage = -1;
 }
 
@@ -92,11 +92,14 @@ int main(void)
 	while (1) {
 		if(allumage == 1)
 		{
+			alarme = 0;
+			//Clear command of the screen
+			lcd_byte(&display_i2c, 0x01, LCD_CMD);
 			// Allumage LED
 			gpio_pin_set_dt(&led_yellow_gpio, 1);
 			if(disp_init == 0)
 			{
-				printk(" Allumage ! ");
+				printk(" Allumage ! \n");
 				write_lcd(&display_i2c," Allumage ! ",LCD_LINE_1);
 				disp_init = 1;
 			}
@@ -122,7 +125,7 @@ int main(void)
 			double volts = val_mv / 1000.0;
 			char caract3[16];
 			printf("Tension Steam sensor : %.3f\n", volts);
-			sprintf(caract3," %1.02f", volts);
+			sprintf(caract3," %f", volts);
 			write_lcd(&display_i2c," Steam sensor :",LCD_LINE_1);
 			write_lcd(&display_i2c,caract3,LCD_LINE_2);
 			k_sleep(K_MSEC(1000));
@@ -141,7 +144,16 @@ int main(void)
 			//Clear command of the screen
 			lcd_byte(&display_i2c, 0x01, LCD_CMD);
 			disp_init = 0;
-			return 0;
+			allumage = 0;
+		} 
+		if(alarme == 1)
+		{
+			//Clear command of the screen
+			lcd_byte(&display_i2c, 0x01, LCD_CMD);
+			//Affichage de detection
+			write_lcd(&display_i2c," PRESENCE ",LCD_LINE_1);
+			write_lcd(&display_i2c," DETECTE ",LCD_LINE_2);
+			k_sleep(K_MSEC(1000));
 		}
 		k_sleep(K_MSEC(1000));
 	}
@@ -156,23 +168,19 @@ void compute_thread(){
 	//IR sensor
 	//err = gpio_pin_configure_dt(&irsensor, GPIO_INPUT);
 	//printk("Value of error is %d\n", err);
-	while(1){
-		//alarme = gpio_pin_get_dt(&irsensor);
-		//printk("Value of alarme is %d\n", alarme);
-		if(alarme == 1){
-			allumage = 0;
-			//Clear command of the screen
-			lcd_byte(&display_i2c, 0x01, LCD_CMD);
-			//Affichage de detection
-			write_lcd(&display_i2c," PRESENCE  ",LCD_LINE_1);
-			write_lcd(&display_i2c," DETECTE ",LCD_LINE_2);
+	while(1)
+	{
+		alarme = gpio_pin_get_dt(&irsensor);
+		if(alarme == 1)
+		{
+			//printk("Value of alarme is %d\n", alarme);
 			//Lumière et buzzer
 			gpio_pin_set_dt(&buzzer, 1);
 			gpio_pin_set_dt(&led_yellow_gpio, 1);
-			k_sleep(K_MSEC(1));
+			k_sleep(K_MSEC(100));
 			gpio_pin_set_dt(&buzzer, 0);
 			gpio_pin_set_dt(&led_yellow_gpio, 0);
-			k_sleep(K_MSEC(1));
+			k_sleep(K_MSEC(100));
 		}
 	}
 }
